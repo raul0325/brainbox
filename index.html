@@ -15,16 +15,17 @@
 <body>
 <div id="light"></div>
 
+<div id="splash">
+  <p id="splashTitle">BrainBox</p>
+  <p id="splashTagline">必要なときに。</p>
+</div>
+
 <main id="app">
   <div id="capture">
     <textarea id="input" placeholder="思いついたことを、そのまま。" rows="1"></textarea>
-    <button id="mic" aria-label="音声で話す">
-      <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>
-    </button>
-    <button id="submit" aria-label="預ける">
-      <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M4 12h14M13 6l6 6-6 6"/></svg>
-    </button>
+    <button id="submit" aria-label="預ける">預ける</button>
   </div>
+  <p id="micHint">キーボードの🎤で話せます</p>
 
   <button id="summary" aria-expanded="false"></button>
 

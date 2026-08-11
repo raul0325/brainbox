@@ -1,39 +1,24 @@
-// ⚠️ 実際にGASをデプロイしたら、ここをWebアプリのURLに差し替える
 const API_URL = "https://script.google.com/macros/s/AKfycbxSB2DgVoWWqVuI9LzgPTqYjQ_fRgAOYL-R6e4ym-jhGnxQa9zrjEasVPILmRIswayyTQ/exec";
 
 const input = document.getElementById("input");
-const micBtn = document.getElementById("mic");
 const submitBtn = document.getElementById("submit");
 const summaryBtn = document.getElementById("summary");
 const todaySection = document.getElementById("today");
 const todayList = document.getElementById("todayList");
+const splash = document.getElementById("splash");
+const micHint = document.getElementById("micHint");
 
-let recognizing = false;
-let recognition = null;
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-if (SpeechRecognition) {
-  recognition = new SpeechRecognition();
-  recognition.lang = "ja-JP";
-  recognition.interimResults = true;
-  recognition.onresult = (e) => {
-    const text = Array.from(e.results).map(r => r[0].transcript).join("");
-    input.value = text;
-    autoResize();
-    toggleSubmit();
-  };
-  recognition.onend = () => { recognizing = false; micBtn.classList.remove("active"); };
+// 起動時のブランド表示。少し見せてから消える。常時表示はしない
+setTimeout(() => splash.classList.add("hide"), 700);
+
+// 🎤ヒントは初回のみ
+if (!localStorage.getItem("brainbox_mic_hint_seen")) {
+  setTimeout(() => micHint.classList.add("visible"), 900);
+  setTimeout(() => {
+    micHint.classList.remove("visible");
+    localStorage.setItem("brainbox_mic_hint_seen", "1");
+  }, 4500);
 }
-
-micBtn.addEventListener("click", () => {
-  if (!recognition) return;
-  if (recognizing) {
-    recognition.stop();
-  } else {
-    recognition.start();
-    recognizing = true;
-    micBtn.classList.add("active");
-  }
-});
 
 function autoResize() {
   input.style.height = "auto";
@@ -60,6 +45,7 @@ function submitEntry() {
 
   if (navigator.vibrate) navigator.vibrate(8);
 
+  // 預けた直後は言葉を出さない。文字が少し上へ動いて消えるだけ
   input.classList.add("leaving");
   setTimeout(() => {
     input.value = "";
@@ -71,7 +57,7 @@ function submitEntry() {
   fetch(API_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain" },
-    body: JSON.stringify({ content: text })
+    body: JSON.stringify({ content: text, inputType: "text" })
   }).then(() => loadSummary()).catch(() => {});
 }
 

@@ -3,7 +3,6 @@
   --mint: #7FD9C4;
   --ink: #2B2B2E;
   --ink-soft: #8A8A93;
-  --card: #FFFFFF;
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -17,13 +16,32 @@ html, body {
   overscroll-behavior: none;
 }
 
+/* ごく弱い静止した光。動かさない・強さを変えない */
 #light {
   position: fixed;
   inset: 0;
-  background: linear-gradient(180deg, rgba(127,217,196,0.10) 0%, rgba(250,250,251,0) 45%);
+  background: linear-gradient(180deg, rgba(127,217,196,0.08) 0%, rgba(250,250,251,0) 45%);
   pointer-events: none;
   z-index: 0;
 }
+
+/* 起動時のみのブランド表示。常時表示はしない */
+#splash {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  opacity: 1;
+  transition: opacity 0.5s ease;
+}
+#splash.hide { opacity: 0; pointer-events: none; }
+#splashTitle { margin: 0; font-size: 20px; font-weight: 600; color: var(--ink); letter-spacing: 0.02em; }
+#splashTagline { margin: 0; font-size: 13px; color: var(--ink-soft); }
 
 #app {
   position: relative;
@@ -34,20 +52,21 @@ html, body {
   justify-content: center;
   align-items: center;
   padding: 24px;
-  gap: 28px;
+  gap: 18px;
 }
 
+/* 入力欄そのもの。箱にしない・影をつけない・静かに */
 #capture {
   width: 100%;
-  max-width: 480px;
+  max-width: 420px;
   display: flex;
   align-items: flex-end;
-  gap: 10px;
-  background: var(--card);
-  border-radius: 24px;
-  padding: 14px 14px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.03);
+  gap: 12px;
+  border-bottom: 1px solid transparent;
+  padding-bottom: 10px;
+  transition: border-color 0.2s ease;
 }
+#capture:focus-within { border-bottom-color: rgba(127,217,196,0.35); }
 
 #input {
   flex: 1;
@@ -55,45 +74,54 @@ html, body {
   outline: none;
   resize: none;
   font-size: 17px;
-  line-height: 1.5;
+  line-height: 1.6;
   font-family: inherit;
   color: var(--ink);
   background: transparent;
   max-height: 140px;
+  text-align: center;
   transition: transform 0.35s ease, opacity 0.35s ease;
 }
 #input::placeholder { color: var(--ink-soft); }
 #input.leaving { transform: translateY(-18px); opacity: 0; }
 
-button { border: none; background: none; cursor: pointer; }
+button { border: none; background: none; cursor: pointer; font-family: inherit; }
 
-#mic, #submit {
-  width: 40px; height: 40px;
-  border-radius: 20px;
-  display: flex; align-items: center; justify-content: center;
-  color: var(--ink-soft);
-  flex-shrink: 0;
-}
-#mic.active { color: var(--mint); }
+/* 現れるだけのゴーストボタン。塗りつぶさない */
 #submit {
-  color: #fff;
-  background: var(--mint);
+  font-size: 14px;
+  color: var(--mint);
+  padding: 4px 2px;
   opacity: 0;
-  transform: scale(0.8);
+  transform: translateY(4px);
   pointer-events: none;
   transition: opacity 0.2s ease, transform 0.2s ease;
+  flex-shrink: 0;
 }
-#submit.visible { opacity: 1; transform: scale(1); pointer-events: auto; }
+#submit.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
+
+/* 初回だけのヒント。以後は出さない */
+#micHint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ink-soft);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  height: 0;
+  overflow: hidden;
+}
+#micHint.visible { opacity: 1; height: auto; }
 
 #summary {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--ink-soft);
   padding: 8px 16px;
+  margin-top: 20px;
 }
 
 #today {
   width: 100%;
-  max-width: 480px;
+  max-width: 420px;
 }
 #todayList {
   list-style: none;
@@ -101,9 +129,9 @@ button { border: none; background: none; cursor: pointer; }
   display: flex; flex-direction: column; gap: 8px;
 }
 #todayList li {
-  background: var(--card);
-  border-radius: 16px;
-  padding: 14px 16px;
-  font-size: 15px;
+  background: #fff;
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-size: 14px;
   box-shadow: 0 1px 2px rgba(0,0,0,0.04);
 }
