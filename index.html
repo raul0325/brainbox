@@ -21,18 +21,23 @@
 </div>
 
 <main id="app">
-  <div id="capture">
-    <textarea id="input" placeholder="思いついたことを、そのまま。" rows="1"></textarea>
-    <button id="submit" aria-label="預ける">預ける</button>
+  <button id="pocket">手もとに</button>
+
+  <div id="bottom">
+    <div id="capture">
+      <textarea id="input" placeholder="思いついたことを、そのまま。" rows="1"></textarea>
+      <button id="submit" aria-label="預ける">預ける</button>
+    </div>
+    <p id="micHint">キーボードの🎤で話せます</p>
   </div>
-  <p id="micHint">キーボードの🎤で話せます</p>
-
-  <button id="summary" aria-expanded="false"></button>
-
-  <section id="today" hidden>
-    <ul id="todayList"></ul>
-  </section>
 </main>
+
+<div id="sheetOverlay"></div>
+<section id="pocketSheet" aria-hidden="true">
+  <div id="sheetHandle"></div>
+  <ul id="pocketList"></ul>
+  <p id="pocketEmpty">まだ何もありません</p>
+</section>
 
 <script src="app.js"></script>
 </body>

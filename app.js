@@ -2,13 +2,15 @@ const API_URL = "https://script.google.com/macros/s/AKfycbxSB2DgVoWWqVuI9LzgPTqY
 
 const input = document.getElementById("input");
 const submitBtn = document.getElementById("submit");
-const summaryBtn = document.getElementById("summary");
-const todaySection = document.getElementById("today");
-const todayList = document.getElementById("todayList");
+const pocketBtn = document.getElementById("pocket");
+const sheet = document.getElementById("pocketSheet");
+const overlay = document.getElementById("sheetOverlay");
+const pocketList = document.getElementById("pocketList");
+const pocketEmpty = document.getElementById("pocketEmpty");
 const splash = document.getElementById("splash");
 const micHint = document.getElementById("micHint");
 
-// 起動時のブランド表示。少し見せてから消える。常時表示はしない
+// 起動時のブランド表示。少し見せてから消える
 setTimeout(() => splash.classList.add("hide"), 700);
 
 // 🎤ヒントは初回のみ
@@ -58,38 +60,38 @@ function submitEntry() {
     method: "POST",
     headers: { "Content-Type": "text/plain" },
     body: JSON.stringify({ content: text, inputType: "text" })
-  }).then(() => loadSummary()).catch(() => {});
+  }).catch(() => {});
 }
 
-function loadSummary() {
+// 「手もとに」— 件数は出さない。開いたときだけ中身を取りに行く
+pocketBtn.addEventListener("click", () => openPocket());
+overlay.addEventListener("click", () => closePocket());
+
+function openPocket() {
+  sheet.classList.add("open");
+  overlay.classList.add("open");
+  sheet.setAttribute("aria-hidden", "false");
+
   fetch(`${API_URL}?action=today`)
     .then(r => r.json())
-    .then(data => {
-      const count = data.items ? data.items.length : 0;
-      summaryBtn.textContent = count > 0 ? `今日は${count}つ預かっています` : "";
-      window._todayItems = data.items || [];
-    })
-    .catch(() => {});
+    .then(data => renderPocket(data.items || []))
+    .catch(() => renderPocket([]));
 }
 
-summaryBtn.addEventListener("click", () => {
-  const items = window._todayItems || [];
-  if (items.length === 0) return;
-  const opening = todaySection.hasAttribute("hidden");
-  if (opening) {
-    todayList.innerHTML = items.map(i => `<li>${escapeHtml(i.content)}</li>`).join("");
-    todaySection.removeAttribute("hidden");
-  } else {
-    todaySection.setAttribute("hidden", "");
-  }
-  summaryBtn.setAttribute("aria-expanded", String(opening));
-});
+function closePocket() {
+  sheet.classList.remove("open");
+  overlay.classList.remove("open");
+  sheet.setAttribute("aria-hidden", "true");
+}
+
+function renderPocket(items) {
+  pocketList.innerHTML = items.map(i => `<li>${escapeHtml(i.content)}</li>`).join("");
+  pocketEmpty.classList.toggle("visible", items.length === 0);
+}
 
 function escapeHtml(s) {
   return s.replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
-
-loadSummary();
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
