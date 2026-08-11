@@ -1,4 +1,4 @@
-const CACHE_NAME = "brainbox-v1";
+const CACHE_NAME = "brainbox-v2";
 const SHELL = ["./", "index.html", "style.css", "app.js", "manifest.json"];
 
 self.addEventListener("install", (e) => {
