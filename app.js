@@ -16,6 +16,8 @@ const overlay = document.getElementById("sheetOverlay");
 const pocketList = document.getElementById("pocketList");
 const pocketEmpty = document.getElementById("pocketEmpty");
 const undoToast = document.getElementById("undoToast");
+const pullIndicator = document.getElementById("pullIndicator");
+const pocketBody = document.getElementById("pocketBody");
 const splash = document.getElementById("splash");
 const micHint = document.getElementById("micHint");
 
@@ -133,7 +135,7 @@ function openPocket() {
  * 失敗しても1回だけ静かに取り直す。
  */
 function loadPocket(retryLeft) {
-  fetch(`${API_URL}?action=today`)
+  return fetch(`${API_URL}?action=today`)
     .then(r => r.json())
     .then(data => {
       const items = data.items || [];
@@ -142,8 +144,9 @@ function loadPocket(retryLeft) {
     })
     .catch(() => {
       if (retryLeft > 0) {
-        setTimeout(() => loadPocket(retryLeft - 1), 1200);
-        return;
+        return new Promise((resolve) => {
+          setTimeout(() => resolve(loadPocket(retryLeft - 1)), 1200);
+        });
       }
       // 中身が無いのか、読めなかったのかを区別して伝える
       if (pocketList.children.length === 0) {
@@ -300,6 +303,67 @@ function hideUndoToast() {
 }
 
 undoToast.addEventListener("click", () => undoPending());
+
+/**
+ * 引っ張って更新。一番上まで来ているときに下へ引くと、くるくるが出て最新を取り直す。
+ * 普段は畳まれていて見えないので、使わない人は気づかなくてよい。
+ */
+const PULL_THRESHOLD = 64;
+let pullStartY = null;
+let pullDistance = 0;
+let refreshing = false;
+
+sheet.addEventListener("touchstart", (e) => {
+  if (refreshing) return;
+  pullStartY = sheet.scrollTop <= 0 ? e.touches[0].clientY : null;
+  pullDistance = 0;
+}, { passive: true });
+
+sheet.addEventListener("touchmove", (e) => {
+  if (pullStartY === null || refreshing) return;
+  const delta = e.touches[0].clientY - pullStartY;
+  if (delta <= 0) {
+    pullDistance = 0;
+    pocketBody.style.transform = "";
+    pullIndicator.classList.remove("active");
+    return;
+  }
+  // 引くほど重くなる感じにして、引きすぎないようにする
+  pullDistance = Math.min(delta * 0.5, 80);
+  pocketBody.style.transition = "none";
+  pocketBody.style.transform = `translateY(${pullDistance}px)`;
+  pullIndicator.classList.toggle("active", pullDistance > 12);
+}, { passive: true });
+
+sheet.addEventListener("touchend", () => {
+  if (pullStartY === null || refreshing) return;
+  pocketBody.style.transition = "";
+
+  if (pullDistance >= PULL_THRESHOLD) {
+    startRefresh();
+  } else {
+    pocketBody.style.transform = "";
+    pullIndicator.classList.remove("active");
+  }
+
+  pullStartY = null;
+  pullDistance = 0;
+});
+
+function startRefresh() {
+  refreshing = true;
+  pocketBody.style.transform = "";
+  pullIndicator.classList.add("active", "spinning");
+  if (navigator.vibrate) navigator.vibrate(6);
+
+  loadPocket(1).then(() => {
+    // 一瞬で消えると更新されたのか分からないので、少しだけ見せてから畳む
+    setTimeout(() => {
+      pullIndicator.classList.remove("active", "spinning");
+      refreshing = false;
+    }, 400);
+  });
+}
 
 
 if ("serviceWorker" in navigator) {

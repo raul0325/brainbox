@@ -212,6 +212,29 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
   margin: 6px auto 16px;
 }
 
+/* 引っ張って更新。普段は畳まれていて見えない */
+#pullIndicator {
+  height: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: height 0.2s ease;
+}
+#pullIndicator.active { height: 32px; }
+#pullIndicator span {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(43,43,46,0.12);
+  border-top-color: var(--mint);
+  opacity: 0.9;
+}
+#pullIndicator.spinning span { animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+#pocketBody { transition: transform 0.2s ease; }
+
 #pocketList {
   list-style: none;
   margin: 0; padding: 0;
