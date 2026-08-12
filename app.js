@@ -73,7 +73,7 @@ function updateDateChip() {
 }
 
 function formatDate(iso) {
-  const [y, m, d] = iso.split("-");
+  const [y, m, d] = String(iso).slice(0, 10).split("-");
   return `${Number(m)}/${Number(d)}`;
 }
 
