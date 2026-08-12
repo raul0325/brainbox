@@ -16,11 +16,13 @@ html, body {
   overscroll-behavior: none;
 }
 
-/* ごく弱い静止した光。動かさない・強さを変えない */
+/* もらった光の画像を背景に。動かさない・強さを変えない */
 #light {
   position: fixed;
   inset: 0;
-  background: linear-gradient(180deg, rgba(127,217,196,0.08) 0%, rgba(250,250,251,0) 45%);
+  background-image: url('light-bg.jpg');
+  background-size: cover;
+  background-position: center top;
   pointer-events: none;
   z-index: 0;
 }
@@ -55,12 +57,21 @@ html, body {
   padding: 20px 24px calc(28px + env(safe-area-inset-bottom));
 }
 
-/* 件数・状態は出さない、ただの入口。「預ける」のすぐ下、手もとにある感覚 */
+/* カードと「手もとに」をゆるくつなぐ区切り */
+#dots {
+  font-size: 13px;
+  letter-spacing: 2px;
+  color: rgba(43,43,46,0.18);
+  margin-top: 10px;
+  line-height: 1;
+}
+
+/* 件数・状態は出さない、ただの入口 */
 #pocket {
   font-size: 13px;
   color: var(--ink-soft);
   padding: 8px 10px;
-  margin-top: 12px;
+  margin-top: 2px;
   align-self: center;
 }
 
@@ -86,16 +97,17 @@ html, body {
 #capture {
   width: 100%;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   gap: 10px;
-  border-bottom: 1px solid transparent;
-  padding-bottom: 10px;
-  transition: border-color 0.2s ease;
+  background: #fff;
+  border-radius: 20px;
+  padding: 14px 16px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 8px 20px rgba(0,0,0,0.03);
 }
-#capture:focus-within { border-bottom-color: rgba(127,217,196,0.35); }
 
 #input {
   flex: 1;
+  min-width: 0;
   border: none;
   outline: none;
   resize: none;
@@ -105,7 +117,6 @@ html, body {
   color: var(--ink);
   background: transparent;
   max-height: 140px;
-  text-align: center;
   transition: transform 0.35s ease, opacity 0.35s ease;
 }
 #input::placeholder { color: var(--ink-soft); }
