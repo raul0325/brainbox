@@ -1,3 +1,8 @@
+/**
+ * app.js — BrainBox フロント側の動き
+ * 責務：預ける／日付を選ぶ／「手もとに」を開いて中身を表示する
+ */
+
 const API_URL = "https://script.google.com/macros/s/AKfycbxSB2DgVoWWqVuI9LzgPTqYjQ_fRgAOYL-R6e4ym-jhGnxQa9zrjEasVPILmRIswayyTQ/exec";
 
 const input = document.getElementById("input");
@@ -128,15 +133,28 @@ function closePocket() {
 }
 
 function renderPocket(items) {
-  pocketList.innerHTML = items.map(i => {
-    const dateLabel = i.scheduledDate ? `<span class="pocketDate">${formatDate(i.scheduledDate)}</span>` : "";
-    return `<li>${dateLabel}<span>${escapeHtml(i.content)}</span></li>`;
-  }).join("");
-  pocketEmpty.classList.toggle("visible", items.length === 0);
+  const list = Array.isArray(items) ? items : [];
+
+  try {
+    pocketList.innerHTML = list.map(i => {
+      const dateLabel = i && i.scheduledDate
+        ? `<span class="pocketDate">${escapeHtml(formatDate(i.scheduledDate))}</span>`
+        : "";
+      const body = escapeHtml(i && i.content);
+      return `<li>${dateLabel}<span>${body}</span></li>`;
+    }).join("");
+  } catch (err) {
+    // 1件おかしなデータがあっても、全部が消えてしまわないようにする
+    pocketList.innerHTML = "";
+  }
+
+  pocketEmpty.classList.toggle("visible", pocketList.children.length === 0);
 }
 
+// 文字列以外(数字・空・null)が来ても止まらないようにしておく
 function escapeHtml(s) {
-  return s.replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  return String(s == null ? "" : s)
+    .replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
 
 if ("serviceWorker" in navigator) {
