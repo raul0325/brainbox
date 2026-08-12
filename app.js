@@ -2,6 +2,9 @@ const API_URL = "https://script.google.com/macros/s/AKfycbxSB2DgVoWWqVuI9LzgPTqY
 
 const input = document.getElementById("input");
 const submitBtn = document.getElementById("submit");
+const calendarBtn = document.getElementById("calendarBtn");
+const dateInput = document.getElementById("dateInput");
+const dateChip = document.getElementById("dateChip");
 const pocketBtn = document.getElementById("pocket");
 const sheet = document.getElementById("pocketSheet");
 const overlay = document.getElementById("sheetOverlay");
@@ -9,6 +12,8 @@ const pocketList = document.getElementById("pocketList");
 const pocketEmpty = document.getElementById("pocketEmpty");
 const splash = document.getElementById("splash");
 const micHint = document.getElementById("micHint");
+
+let selectedDate = ""; // "" = 期限なし。YYYY-MM-DD の形でだけ持つ
 
 // 起動時のブランド表示。少し見せてから消える
 setTimeout(() => splash.classList.add("hide"), 700);
@@ -41,11 +46,50 @@ input.addEventListener("keydown", (e) => {
   }
 });
 
+// カレンダーアイコン → 日付を選ぶ。選ばなくてもよい任意項目
+calendarBtn.addEventListener("click", () => {
+  if (dateInput.showPicker) {
+    dateInput.showPicker();
+  } else {
+    dateInput.click();
+  }
+});
+
+dateInput.addEventListener("change", () => {
+  selectedDate = dateInput.value || "";
+  updateDateChip();
+});
+
+// チップをタップで日付を外す
+dateChip.addEventListener("click", () => {
+  selectedDate = "";
+  dateInput.value = "";
+  updateDateChip();
+});
+
+function updateDateChip() {
+  if (selectedDate) {
+    dateChip.textContent = formatDate(selectedDate);
+    dateChip.hidden = false;
+    calendarBtn.classList.add("active");
+  } else {
+    dateChip.hidden = true;
+    calendarBtn.classList.remove("active");
+  }
+}
+
+function formatDate(iso) {
+  const [y, m, d] = iso.split("-");
+  return `${Number(m)}/${Number(d)}`;
+}
+
 function submitEntry() {
   const text = input.value.trim();
   if (!text) return;
 
   if (navigator.vibrate) navigator.vibrate(8);
+
+  const scheduledDate = selectedDate;
 
   // 預けた直後は言葉を出さない。文字が少し上へ動いて消えるだけ
   input.classList.add("leaving");
@@ -56,10 +100,15 @@ function submitEntry() {
     toggleSubmit();
   }, 350);
 
+  // 日付は1回預けるごとにリセット(次のひとことに引き継がない)
+  selectedDate = "";
+  dateInput.value = "";
+  updateDateChip();
+
   fetch(API_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain" },
-    body: JSON.stringify({ content: text, inputType: "text" })
+    body: JSON.stringify({ content: text, inputType: "text", scheduledDate })
   }).catch(() => {});
 }
 
@@ -85,7 +134,10 @@ function closePocket() {
 }
 
 function renderPocket(items) {
-  pocketList.innerHTML = items.map(i => `<li>${escapeHtml(i.content)}</li>`).join("");
+  pocketList.innerHTML = items.map(i => {
+    const dateLabel = i.scheduledDate ? `<span class="pocketDate">${formatDate(i.scheduledDate)}</span>` : "";
+    return `<li>${dateLabel}<span>${escapeHtml(i.content)}</span></li>`;
+  }).join("");
   pocketEmpty.classList.toggle("visible", items.length === 0);
 }
 

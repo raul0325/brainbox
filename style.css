@@ -97,8 +97,8 @@ html, body {
 #capture {
   width: 100%;
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  gap: 6px;
   background: #fff;
   border-radius: 20px;
   padding: 14px 16px;
@@ -106,8 +106,7 @@ html, body {
 }
 
 #input {
-  flex: 1;
-  min-width: 0;
+  width: 100%;
   border: none;
   outline: none;
   resize: none;
@@ -121,6 +120,13 @@ html, body {
 }
 #input::placeholder { color: var(--ink-soft); }
 #input.leaving { transform: translateY(-18px); opacity: 0; }
+
+#captureControls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+}
 
 button { border: none; background: none; cursor: pointer; font-family: inherit; }
 
