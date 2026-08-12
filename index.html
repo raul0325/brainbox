@@ -21,13 +21,23 @@
 </div>
 
 <main id="app">
-  <button id="pocket">手もとに</button>
-
   <div id="bottom">
+    <button id="dateChip" hidden></button>
+
     <div id="capture">
       <textarea id="input" placeholder="思いついたことを、そのまま。" rows="1"></textarea>
+      <button id="calendarBtn" aria-label="日付を選ぶ">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6">
+          <rect x="3.5" y="5" width="17" height="15" rx="2.5"/>
+          <path d="M3.5 9.5h17M8 3v3M16 3v3"/>
+        </svg>
+      </button>
+      <input type="date" id="dateInput" tabindex="-1">
       <button id="submit" aria-label="預ける">預ける</button>
     </div>
+
+    <button id="pocket">手もとに</button>
+
     <p id="micHint">キーボードの🎤で話せます</p>
   </div>
 </main>

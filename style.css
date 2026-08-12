@@ -43,27 +43,29 @@ html, body {
 #splashTitle { margin: 0; font-size: 20px; font-weight: 600; color: var(--ink); }
 #splashTagline { margin: 0; font-size: 13px; color: var(--ink-soft); }
 
-/* 上＝手もとに入口／中央＝余白／下＝入力欄 */
+/* 中央＝余白／下寄り＝入力欄＋手もとに */
 #app {
   position: relative;
   z-index: 1;
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   padding: 20px 24px calc(28px + env(safe-area-inset-bottom));
 }
 
-/* 件数・状態は出さない、ただの入口 */
+/* 件数・状態は出さない、ただの入口。「預ける」のすぐ下、手もとにある感覚 */
 #pocket {
   font-size: 13px;
   color: var(--ink-soft);
   padding: 8px 10px;
+  margin-top: 12px;
   align-self: center;
 }
 
 #bottom {
+  position: relative;
   width: 100%;
   max-width: 420px;
   display: flex;
@@ -72,11 +74,20 @@ html, body {
   gap: 8px;
 }
 
+/* 選んだ日付だけ、控えめに見せる。タップで解除 */
+#dateChip {
+  font-size: 12px;
+  color: var(--mint);
+  background: rgba(127,217,196,0.12);
+  border-radius: 12px;
+  padding: 4px 12px;
+}
+
 #capture {
   width: 100%;
   display: flex;
   align-items: flex-end;
-  gap: 12px;
+  gap: 10px;
   border-bottom: 1px solid transparent;
   padding-bottom: 10px;
   transition: border-color 0.2s ease;
@@ -101,6 +112,27 @@ html, body {
 #input.leaving { transform: translateY(-18px); opacity: 0; }
 
 button { border: none; background: none; cursor: pointer; font-family: inherit; }
+
+/* カレンダーアイコン。存在を主張しない静かな置き方 */
+#calendarBtn {
+  color: var(--ink-soft);
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  transition: color 0.2s ease;
+}
+#calendarBtn.active { color: var(--mint); }
+
+/* 実体は隠して、アイコンから呼び出すだけ */
+#dateInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+  border: none;
+}
 
 #submit {
   font-size: 14px;
@@ -170,6 +202,14 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
   padding: 12px 14px;
   font-size: 14px;
   box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.pocketDate {
+  font-size: 11px;
+  color: var(--mint);
+  flex-shrink: 0;
 }
 
 #pocketEmpty {
