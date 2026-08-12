@@ -22,6 +22,7 @@ const splash = document.getElementById("splash");
 const micHint = document.getElementById("micHint");
 
 let selectedDate = ""; // "" = 期限なし。YYYY-MM-DD の形でだけ持つ
+let refreshing = false; // 引っ張って更新の最中かどうか
 
 // 起動時のブランド表示。少し見せてから消える
 setTimeout(() => splash.classList.add("hide"), 700);
@@ -135,7 +136,7 @@ function openPocket() {
  * 失敗しても1回だけ静かに取り直す。
  */
 function loadPocket(retryLeft) {
-  return fetch(`${API_URL}?action=today`)
+  return fetchWithTimeout(`${API_URL}?action=today`, 10000)
     .then(r => r.json())
     .then(data => {
       const items = data.items || [];
@@ -154,6 +155,16 @@ function loadPocket(retryLeft) {
         pocketEmpty.classList.add("visible");
       }
     });
+}
+
+// 応答が無いまま待ち続けないように、時間切れを設ける
+function fetchWithTimeout(url, ms) {
+  if (typeof AbortController === "undefined") return fetch(url);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  return fetch(url, { signal: controller.signal })
+    .then((r) => { clearTimeout(timer); return r; })
+    .catch((err) => { clearTimeout(timer); throw err; });
 }
 
 function readCache() {
@@ -175,6 +186,8 @@ function writeCache(items) {
 
 function closePocket() {
   finalizePending(); // 開いたままにしてある取り消し猶予は、閉じたら確定させる
+  stopRefresh();
+  pocketBody.style.transform = "";
   sheet.classList.remove("open");
   overlay.classList.remove("open");
   sheet.setAttribute("aria-hidden", "true");
@@ -311,7 +324,6 @@ undoToast.addEventListener("click", () => undoPending());
 const PULL_THRESHOLD = 64;
 let pullStartY = null;
 let pullDistance = 0;
-let refreshing = false;
 
 sheet.addEventListener("touchstart", (e) => {
   if (refreshing) return;
@@ -356,13 +368,22 @@ function startRefresh() {
   pullIndicator.classList.add("active", "spinning");
   if (navigator.vibrate) navigator.vibrate(6);
 
-  loadPocket(1).then(() => {
-    // 一瞬で消えると更新されたのか分からないので、少しだけ見せてから畳む
-    setTimeout(() => {
-      pullIndicator.classList.remove("active", "spinning");
-      refreshing = false;
-    }, 400);
-  });
+  // 何が起きても必ず止める(念のための保険)
+  const failsafe = setTimeout(() => stopRefresh(), 12000);
+
+  loadPocket(1)
+    .catch(() => {})
+    .then(() => {
+      clearTimeout(failsafe);
+      // 一瞬で消えると更新されたのか分からないので、少しだけ見せてから畳む
+      setTimeout(() => stopRefresh(), 400);
+    });
+}
+
+function stopRefresh() {
+  if (!pullIndicator) return;
+  pullIndicator.classList.remove("active", "spinning");
+  refreshing = false;
 }
 
 
