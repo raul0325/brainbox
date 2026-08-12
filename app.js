@@ -15,6 +15,7 @@ const sheet = document.getElementById("pocketSheet");
 const overlay = document.getElementById("sheetOverlay");
 const pocketList = document.getElementById("pocketList");
 const pocketEmpty = document.getElementById("pocketEmpty");
+const undoToast = document.getElementById("undoToast");
 const splash = document.getElementById("splash");
 const micHint = document.getElementById("micHint");
 
@@ -127,6 +128,7 @@ function openPocket() {
 }
 
 function closePocket() {
+  finalizePending(); // 開いたままにしてある取り消し猶予は、閉じたら確定させる
   sheet.classList.remove("open");
   overlay.classList.remove("open");
   sheet.setAttribute("aria-hidden", "true");
@@ -134,28 +136,115 @@ function closePocket() {
 
 function renderPocket(items) {
   const list = Array.isArray(items) ? items : [];
+  pocketList.innerHTML = "";
 
-  try {
-    pocketList.innerHTML = list.map(i => {
-      const dateLabel = i && i.scheduledDate
-        ? `<span class="pocketDate">${escapeHtml(formatDate(i.scheduledDate))}</span>`
-        : "";
-      const body = escapeHtml(i && i.content);
-      return `<li>${dateLabel}<span>${body}</span></li>`;
-    }).join("");
-  } catch (err) {
-    // 1件おかしなデータがあっても、全部が消えてしまわないようにする
-    pocketList.innerHTML = "";
-  }
+  list.forEach((i) => {
+    if (!i || !i.id) return;
+    const li = document.createElement("li");
+    li.dataset.id = i.id;
+
+    if (i.scheduledDate) {
+      const dateSpan = document.createElement("span");
+      dateSpan.className = "pocketDate";
+      dateSpan.textContent = formatDate(i.scheduledDate);
+      li.appendChild(dateSpan);
+    }
+
+    const textSpan = document.createElement("span");
+    textSpan.textContent = i.content == null ? "" : String(i.content);
+    li.appendChild(textSpan);
+
+    attachSwipe(li, { id: i.id, content: textSpan.textContent });
+    pocketList.appendChild(li);
+  });
 
   pocketEmpty.classList.toggle("visible", pocketList.children.length === 0);
 }
 
-// 文字列以外(数字・空・null)が来ても止まらないようにしておく
-function escapeHtml(s) {
-  return String(s == null ? "" : s)
-    .replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+// 上スワイプで完了。「預ける」と同じく、言葉ではなく動きで手放す
+let pendingComplete = null; // { item, li, timer }
+const SWIPE_THRESHOLD = -60;
+
+function attachSwipe(li, item) {
+  let startY = null;
+  let deltaY = 0;
+
+  li.addEventListener("touchstart", (e) => {
+    startY = e.touches[0].clientY;
+    li.style.transition = "none";
+  }, { passive: true });
+
+  li.addEventListener("touchmove", (e) => {
+    if (startY === null) return;
+    deltaY = e.touches[0].clientY - startY;
+    if (deltaY < 0) {
+      li.style.transform = `translateY(${deltaY}px)`;
+      li.style.opacity = String(Math.max(0, 1 + deltaY / 120));
+    }
+  }, { passive: true });
+
+  li.addEventListener("touchend", () => {
+    li.style.transition = "transform 0.25s ease, opacity 0.25s ease";
+    if (deltaY < SWIPE_THRESHOLD) {
+      completeItem(item, li);
+    } else {
+      li.style.transform = "";
+      li.style.opacity = "";
+    }
+    startY = null;
+    deltaY = 0;
+  });
 }
+
+function completeItem(item, li) {
+  finalizePending(); // 前の1件がまだ猶予中なら、先に確定させてから次へ
+
+  li.style.transform = "translateY(-40px)";
+  li.style.opacity = "0";
+  li.style.pointerEvents = "none";
+
+  undoToast.hidden = false;
+  requestAnimationFrame(() => undoToast.classList.add("visible"));
+
+  pendingComplete = {
+    item,
+    li,
+    timer: setTimeout(() => finalizePending(), 4000)
+  };
+}
+
+function finalizePending() {
+  if (!pendingComplete) return;
+  const { item, timer } = pendingComplete;
+  clearTimeout(timer);
+  pendingComplete = null;
+  hideUndoToast();
+
+  fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain" },
+    body: JSON.stringify({ action: "complete", id: item.id })
+  }).catch(() => {});
+}
+
+function undoPending() {
+  if (!pendingComplete) return;
+  const { timer, li } = pendingComplete;
+  clearTimeout(timer);
+  li.style.transform = "";
+  li.style.opacity = "";
+  li.style.pointerEvents = "";
+  pendingComplete = null;
+  hideUndoToast();
+}
+
+function hideUndoToast() {
+  undoToast.classList.remove("visible");
+  setTimeout(() => { undoToast.hidden = true; }, 200);
+}
+
+undoToast.addEventListener("click", () => undoPending());
+
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {

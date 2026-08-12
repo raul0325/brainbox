@@ -226,6 +226,7 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
   display: flex;
   align-items: baseline;
   gap: 8px;
+  touch-action: pan-y;
 }
 .pocketDate {
   font-size: 11px;
@@ -241,3 +242,22 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
   display: none;
 }
 #pocketEmpty.visible { display: block; }
+
+/* 完了(上スワイプ)直後だけ、ごく短く出す取り消し */
+#undoToast {
+  position: sticky;
+  bottom: 4px;
+  display: block;
+  margin: 12px auto 0;
+  font-size: 12px;
+  color: var(--ink-soft);
+  background: #fff;
+  border-radius: 12px;
+  padding: 6px 14px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
+}
+#undoToast.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
