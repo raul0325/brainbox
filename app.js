@@ -121,10 +121,53 @@ function openPocket() {
   overlay.classList.add("open");
   sheet.setAttribute("aria-hidden", "false");
 
+  // まず前回の中身をそのまま出す。GASが起きるまでの数秒を空っぽで待たせないため
+  const cached = readCache();
+  if (cached) renderPocket(cached);
+
+  loadPocket(cached ? 1 : 0);
+}
+
+/**
+ * 最新を取りに行く。GASは休眠から起きる際に一度失敗することがあるので、
+ * 失敗しても1回だけ静かに取り直す。
+ */
+function loadPocket(retryLeft) {
   fetch(`${API_URL}?action=today`)
     .then(r => r.json())
-    .then(data => renderPocket(data.items || []))
-    .catch(() => renderPocket([]));
+    .then(data => {
+      const items = data.items || [];
+      renderPocket(items);
+      writeCache(items);
+    })
+    .catch(() => {
+      if (retryLeft > 0) {
+        setTimeout(() => loadPocket(retryLeft - 1), 1200);
+        return;
+      }
+      // 中身が無いのか、読めなかったのかを区別して伝える
+      if (pocketList.children.length === 0) {
+        pocketEmpty.textContent = "うまく読み込めませんでした";
+        pocketEmpty.classList.add("visible");
+      }
+    });
+}
+
+function readCache() {
+  try {
+    const raw = localStorage.getItem("brainbox_pocket_cache");
+    const parsed = raw ? JSON.parse(raw) : null;
+    return Array.isArray(parsed) && parsed.length ? parsed : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function writeCache(items) {
+  try {
+    const clean = (items || []).filter(i => i && !hiddenIds.has(i.id));
+    localStorage.setItem("brainbox_pocket_cache", JSON.stringify(clean));
+  } catch (e) {}
 }
 
 function closePocket() {
@@ -136,10 +179,12 @@ function closePocket() {
 
 function renderPocket(items) {
   const list = Array.isArray(items) ? items : [];
+  lastItems = list;
   pocketList.innerHTML = "";
 
   list.forEach((i) => {
     if (!i || !i.id) return;
+    if (hiddenIds.has(i.id)) return; // 一度スワイプしたものは描き直しても出さない
     const li = document.createElement("li");
     li.dataset.id = i.id;
 
@@ -158,11 +203,14 @@ function renderPocket(items) {
     pocketList.appendChild(li);
   });
 
+  pocketEmpty.textContent = "まだ何もありません";
   pocketEmpty.classList.toggle("visible", pocketList.children.length === 0);
 }
 
 // 上スワイプで完了。「預ける」と同じく、言葉ではなく動きで手放す
-let pendingComplete = null; // { item, li, timer }
+let pendingComplete = null; // { item, timer }
+let lastItems = [];         // 直近に受け取った一覧(元に戻すときに描き直すため)
+const hiddenIds = new Set(); // スワイプ済み。サーバーがまだ知らなくても画面には出さない
 const SWIPE_THRESHOLD = -60;
 
 function attachSwipe(li, item) {
@@ -199,16 +247,21 @@ function attachSwipe(li, item) {
 function completeItem(item, li) {
   finalizePending(); // 前の1件がまだ猶予中なら、先に確定させてから次へ
 
+  hiddenIds.add(item.id);
+
   li.style.transform = "translateY(-40px)";
   li.style.opacity = "0";
   li.style.pointerEvents = "none";
+  setTimeout(() => {
+    if (li.parentNode) li.parentNode.removeChild(li);
+    pocketEmpty.classList.toggle("visible", pocketList.children.length === 0);
+  }, 250);
 
   undoToast.hidden = false;
   requestAnimationFrame(() => undoToast.classList.add("visible"));
 
   pendingComplete = {
     item,
-    li,
     timer: setTimeout(() => finalizePending(), 4000)
   };
 }
@@ -220,6 +273,10 @@ function finalizePending() {
   pendingComplete = null;
   hideUndoToast();
 
+  // キャッシュからも消しておく(次に開いた時に一瞬だけ復活して見えないように)
+  const cached = readCache();
+  if (cached) writeCache(cached.filter(c => c && c.id !== item.id));
+
   fetch(API_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain" },
@@ -229,13 +286,12 @@ function finalizePending() {
 
 function undoPending() {
   if (!pendingComplete) return;
-  const { timer, li } = pendingComplete;
+  const { item, timer } = pendingComplete;
   clearTimeout(timer);
-  li.style.transform = "";
-  li.style.opacity = "";
-  li.style.pointerEvents = "";
   pendingComplete = null;
+  hiddenIds.delete(item.id); // 隠す対象から外して、元の並びのまま描き直す
   hideUndoToast();
+  renderPocket(lastItems);
 }
 
 function hideUndoToast() {
