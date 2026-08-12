@@ -130,25 +130,29 @@ html, body {
 
 button { border: none; background: none; cursor: pointer; font-family: inherit; }
 
-/* カレンダーアイコン。存在を主張しない静かな置き方 */
-#calendarBtn {
-  color: var(--ink-soft);
-  padding: 4px;
+/* カレンダーアイコン。実体の日付欄をこの上に透明で重ねて、直接タップさせる */
+#calendarWrap {
+  position: relative;
+  width: 26px;
+  height: 26px;
   display: flex;
   align-items: center;
+  justify-content: center;
+  color: var(--ink-soft);
   flex-shrink: 0;
   transition: color 0.2s ease;
 }
-#calendarBtn.active { color: var(--mint); }
+#calendarWrap svg { pointer-events: none; }
+#calendarWrap.active { color: var(--mint); }
 
-/* 実体は隠して、アイコンから呼び出すだけ */
 #dateInput {
   position: absolute;
-  width: 1px;
-  height: 1px;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   opacity: 0;
-  pointer-events: none;
   border: none;
+  cursor: pointer;
 }
 
 #submit {

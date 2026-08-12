@@ -2,7 +2,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbxSB2DgVoWWqVuI9LzgPTqY
 
 const input = document.getElementById("input");
 const submitBtn = document.getElementById("submit");
-const calendarBtn = document.getElementById("calendarBtn");
+const calendarWrap = document.getElementById("calendarWrap");
 const dateInput = document.getElementById("dateInput");
 const dateChip = document.getElementById("dateChip");
 const pocketBtn = document.getElementById("pocket");
@@ -46,14 +46,8 @@ input.addEventListener("keydown", (e) => {
   }
 });
 
-// カレンダーアイコン → 日付を選ぶ。選ばなくてもよい任意項目
-calendarBtn.addEventListener("click", () => {
-  if (dateInput.showPicker) {
-    dateInput.showPicker();
-  } else {
-    dateInput.click();
-  }
-});
+// カレンダーは実体の日付欄が透明でアイコンの上に重なっているので、
+// ここではタップ自体はOSに任せ、選ばれた時の反応だけを扱う
 
 dateInput.addEventListener("change", () => {
   selectedDate = dateInput.value || "";
@@ -71,10 +65,10 @@ function updateDateChip() {
   if (selectedDate) {
     dateChip.textContent = formatDate(selectedDate);
     dateChip.hidden = false;
-    calendarBtn.classList.add("active");
+    calendarWrap.classList.add("active");
   } else {
     dateChip.hidden = true;
-    calendarBtn.classList.remove("active");
+    calendarWrap.classList.remove("active");
   }
 }
 
