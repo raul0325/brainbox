@@ -229,35 +229,79 @@ let lastItems = [];         // 直近に受け取った一覧(元に戻すとき
 const hiddenIds = new Set(); // スワイプ済み。サーバーがまだ知らなくても画面には出さない
 const SWIPE_THRESHOLD = -60;
 
+// 長押しして持ち上げてから、上へ。スクロールと混ざらないようにするため
+const LONG_PRESS_MS = 400;
+const MOVE_TOLERANCE = 8; // 長押し成立前にこれ以上動いたらスクロールとみなす
+
 function attachSwipe(li, item) {
   let startY = null;
   let deltaY = 0;
+  let armed = false;   // 長押しが成立して、持ち上がった状態か
+  let pressTimer = null;
+
+  function cancelPress() {
+    clearTimeout(pressTimer);
+    pressTimer = null;
+  }
+
+  function reset() {
+    cancelPress();
+    armed = false;
+    startY = null;
+    deltaY = 0;
+    li.classList.remove("lifted");
+    li.style.transition = "transform 0.25s ease, opacity 0.25s ease";
+    li.style.transform = "";
+    li.style.opacity = "";
+  }
 
   li.addEventListener("touchstart", (e) => {
     startY = e.touches[0].clientY;
-    li.style.transition = "none";
+    deltaY = 0;
+    armed = false;
+
+    pressTimer = setTimeout(() => {
+      armed = true;
+      li.classList.add("lifted");
+      if (navigator.vibrate) navigator.vibrate(10);
+    }, LONG_PRESS_MS);
   }, { passive: true });
 
   li.addEventListener("touchmove", (e) => {
     if (startY === null) return;
-    deltaY = e.touches[0].clientY - startY;
+    const moved = e.touches[0].clientY - startY;
+
+    if (!armed) {
+      // まだ持ち上がっていないうちに動いたら、それはスクロール
+      if (Math.abs(moved) > MOVE_TOLERANCE) cancelPress();
+      return;
+    }
+
+    // 持ち上がっている間は、リスト側のスクロールを止めて指の動きに追従させる
+    e.preventDefault();
+    deltaY = moved;
+    li.style.transition = "none";
     if (deltaY < 0) {
-      li.style.transform = `translateY(${deltaY}px)`;
+      li.style.transform = `translateY(${deltaY}px) scale(1.02)`;
       li.style.opacity = String(Math.max(0, 1 + deltaY / 120));
     }
-  }, { passive: true });
+  }, { passive: false });
 
   li.addEventListener("touchend", () => {
-    li.style.transition = "transform 0.25s ease, opacity 0.25s ease";
-    if (deltaY < SWIPE_THRESHOLD) {
+    if (armed && deltaY < SWIPE_THRESHOLD) {
+      cancelPress();
+      li.classList.remove("lifted");
+      li.style.transition = "transform 0.25s ease, opacity 0.25s ease";
       completeItem(item, li);
-    } else {
-      li.style.transform = "";
-      li.style.opacity = "";
+      startY = null;
+      deltaY = 0;
+      armed = false;
+      return;
     }
-    startY = null;
-    deltaY = 0;
+    reset();
   });
+
+  li.addEventListener("touchcancel", () => reset());
 }
 
 function completeItem(item, li) {

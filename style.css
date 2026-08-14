@@ -257,6 +257,13 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
   flex-shrink: 0;
 }
 
+/* 長押しで持ち上がった状態。動かしていいことが指先で分かる程度に */
+#pocketList li.lifted {
+  transform: scale(1.02);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.10);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
 #pocketEmpty {
   text-align: center;
   color: var(--ink-soft);
