@@ -250,6 +250,10 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
   align-items: baseline;
   gap: 8px;
   touch-action: pan-y;
+  /* 長押しは「持ち上げる」ための操作。文字選択やコピー吹き出しを出さない */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 .pocketDate {
   font-size: 11px;
